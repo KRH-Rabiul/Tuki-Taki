@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard - Tuki-Taki</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="container">
+        <a href="index.html" class="brand"><img class="brand-logo brand-logo-light" src="images/logo-light.png" alt="Tuki-Taki - your campus marketplace"><img class="brand-logo brand-logo-dark" src="images/logo-dark.png" alt="Tuki-Taki - your campus marketplace"></a>
+        <div class="nav-links"><a href="categories.html">Categories</a></div>
+        <div class="nav-user">
+            <span class="badge-role" id="navUserRole"></span>
+            <span class="user-chip"><span class="avatar" id="navAvatar"></span><span id="navUserName"></span></span>
+            <a href="#" onclick="logout()" class="btn btn-dark btn-sm">Log out</a>
+        </div>
+    </div>
+</nav>
+
+<div class="dash">
+    <aside class="sidebar">
+        <h3>Admin</h3>
+        <div class="side-link" data-tab="overview" onclick="switchTab('overview')">Overview</div>
+        <div class="side-link" data-tab="approvals" onclick="switchTab('approvals')">Approvals <span class="nav-badge" id="approvalsBadge" style="display:none;">0</span></div>
+        <div class="side-link" data-tab="users" onclick="switchTab('users')">All Users</div>
+        <div class="side-link" data-tab="products" onclick="switchTab('products')">All Products</div>
+        <div class="side-link" data-tab="orders" onclick="switchTab('orders')">All Orders</div>
+        <div class="side-link" data-tab="reports" onclick="switchTab('reports')">Reports</div>
+        <div class="side-link" data-tab="settings" onclick="switchTab('settings')">Pickup Settings</div>
+    </aside>
+
+    <section class="dash-content">
+
+        <div id="tab-overview">
+            <div class="section-head"><h2>Overview</h2></div>
+            <div class="stat-row" id="statRow"></div>
+
+            <div class="section-head" style="margin-top:8px"><h3>Listings by category</h3></div>
+            <div class="card"><div class="card-body"><div id="categoryChart" class="admin-chart"></div></div></div>
+
+            <div class="admin-two-col">
+                <div class="card"><div class="card-body">
+                    <h3 class="card-title">Recent signups</h3>
+                    <div id="recentUsers" class="admin-mini-list"></div>
+                </div></div>
+                <div class="card"><div class="card-body">
+                    <h3 class="card-title">Recent orders</h3>
+                    <div id="recentOrders" class="admin-mini-list"></div>
+                </div></div>
+            </div>
+        </div>
+
+        <div id="tab-approvals" style="display:none;">
+            <div class="section-head"><h2>Pending Approvals</h2></div>
+            <p class="text-muted" style="margin-top:-10px;margin-bottom:16px;">New listings wait here until you approve or reject them — they aren't visible to buyers yet.</p>
+            <div id="approvalsGrid" class="grid"></div>
+            <div class="pagination" id="approvalsPagination"></div>
+        </div>
+
+        <div id="tab-users" style="display:none;">
+            <div class="section-head"><h2>All Users</h2></div>
+            <div class="filter-row">
+                <input type="text" id="userSearch" placeholder="Search by name or email...">
+                <select id="userRoleFilter">
+                    <option value="">All roles</option>
+                    <option value="USER">Marketplace user</option>
+                    <option value="ADMIN">Admin</option>
+                </select>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody id="usersBody"></tbody>
+                </table>
+            </div>
+            <div class="pagination" id="usersPagination"></div>
+        </div>
+
+        <div id="tab-products" style="display:none;">
+            <div class="section-head"><h2>All Products</h2></div>
+            <div class="filter-row">
+                <input type="text" id="productSearch" placeholder="Search by product name...">
+                <select id="productCategoryFilter">
+                    <option value="">All categories</option>
+                    <option value="Electronics">Electronics</option>
+                    <option value="Fashion">Fashion</option>
+                    <option value="Home">Home</option>
+                    <option value="Books">Books</option>
+                    <option value="Sports">Sports</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div id="allProductsGrid" class="grid"></div>
+            <div class="pagination" id="productsPagination"></div>
+        </div>
+
+        <div id="tab-orders" style="display:none;">
+            <div class="section-head"><h2>All Orders</h2></div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Order ID</th><th>Buyer ID</th><th>Product ID</th><th>Qty</th><th>Status</th><th>Ordered on</th><th>Admin action</th></tr></thead>
+                    <tbody id="allOrdersBody"></tbody>
+                </table>
+            </div>
+            <div class="pagination" id="ordersPagination"></div>
+        </div>
+
+        <div id="tab-reports" style="display:none;">
+            <div class="section-head"><h2>Reported listings</h2></div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Listing</th><th>Reason</th><th>Details</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody id="reportsBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-settings" style="display:none;">
+            <div class="section-head"><h2>Pickup settings</h2></div>
+            <div class="card" style="max-width:600px;"><div class="card-body">
+                <form id="settingsForm">
+                    <div class="field"><label>Fixed pickup point</label><input id="pickupPoint" required maxlength="255"></div>
+                    <div class="field"><label>Collection instructions</label><textarea id="pickupInstructions" rows="3" maxlength="1000"></textarea></div>
+                    <button class="btn btn-primary">Save pickup settings</button>
+                </form>
+            </div></div>
+        </div>
+
+    </section>
+</div>
+
+<!-- ===== User details modal ===== -->
+<div class="modal-overlay" id="userModal">
+    <div class="modal admin-user-modal">
+        <h2 id="userModalName">User details</h2>
+        <div id="userModalBody"></div>
+        <div class="modal-actions"><button type="button" class="btn btn-outline" onclick="closeUserModal()">Close</button></div>
+    </div>
+</div>
+
+<script src="js/app.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

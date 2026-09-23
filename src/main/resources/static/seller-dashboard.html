@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seller Dashboard - Tuki-Taki</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="container">
+        <a href="index.html" class="brand"><img class="brand-logo brand-logo-light" src="images/logo-light.png" alt="Tuki-Taki - your campus marketplace"><img class="brand-logo brand-logo-dark" src="images/logo-dark.png" alt="Tuki-Taki - your campus marketplace"></a>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="categories.html">Categories</a>
+            <a href="cart.html">Cart<span class="nav-badge" id="cartBadge" style="display:none;">0</span></a>
+            <a href="seller-dashboard.html" class="active">Sell</a>
+            <a href="community.html">Community</a>
+            <a href="wishlist.html">Wishlist</a>
+            <a href="about.html">About</a>
+        </div>
+        <div class="nav-user">
+            <div class="user-menu">
+                <button type="button" class="user-chip"><span class="avatar" id="navAvatar"></span><span id="navUserName"></span></button>
+                <div class="user-menu-panel">
+                    <a href="buyer-dashboard.html">My Orders</a>
+                    <a href="#" onclick="logout()">Log out</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="dash">
+    <aside class="sidebar">
+        <h3>Account</h3>
+        <a class="side-link" href="profile.html">Profile</a>
+        <a class="side-link" href="notifications.html">Notifications</a>
+        <a class="side-link" href="buyer-dashboard.html">My Orders</a>
+        <a class="side-link" href="wishlist.html">Wishlist</a>
+        <a class="side-link" href="seller-shop.html" id="myShopLink">My Shop</a>
+        <div class="side-link active" data-tab="products" onclick="switchTab('products')">My Listings</div>
+        <div class="side-link" data-tab="orders" onclick="switchTab('orders')">Orders Received</div>
+        <a class="side-link" href="messages.html">Messages</a>
+    </aside>
+
+    <section class="dash-content">
+
+        <!-- ===== Products tab ===== -->
+        <div id="tab-products">
+            <div class="section-head">
+                <h2>My Listings</h2>
+                <button class="btn btn-primary" onclick="openAddModal()">+ Add Listing</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th></th><th>Product</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody id="productTableBody"></tbody>
+                </table>
+            </div>
+            <div class="empty" id="emptyProducts" style="display:none;">
+                <div class="icon">🏷️</div>
+                <p>You haven't added any listings yet.</p>
+                <button class="btn btn-primary" onclick="openAddModal()" style="margin-top:12px;">Add your first listing</button>
+            </div>
+        </div>
+
+        <!-- ===== Orders tab ===== -->
+        <div id="tab-orders" style="display:none;">
+            <div class="section-head"><h2>Orders Received</h2></div>
+            <div id="salesSummary" style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:20px;"></div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>Product</th><th>Qty</th><th>Total</th><th>Buyer</th><th>Pickup point</th><th>Status</th><th>Ordered on</th><th>Update</th></tr>
+                    </thead>
+                    <tbody id="ordersBody"></tbody>
+                </table>
+            </div>
+            <div class="empty" id="emptyOrders" style="display:none;">
+                <div class="icon">📦</div>
+                <p>No orders received yet.</p>
+            </div>
+        </div>
+
+    </section>
+</div>
+
+<!-- ===== Add / Edit product modal ===== -->
+<div class="modal-overlay" id="productModal">
+    <div class="modal">
+        <h2 id="modalTitle">Add Product</h2>
+        <form id="productForm">
+            <input type="hidden" id="productId">
+
+            <div class="field">
+                <label>Product photos (up to 5)</label>
+                <label class="image-upload" id="imageUploadBox">
+                    <img id="imagePreview" style="display:none;">
+                    <div class="hint" id="imageHint">JPG, PNG, or WebP — up to 5 images</div>
+                    <input type="file" id="imageInput" accept="image/jpeg,image/png,image/webp" multiple onchange="previewImage(this)">
+                </label>
+            </div>
+
+            <div class="field">
+                <label>Product name</label>
+                <input type="text" id="pName" required placeholder="e.g. Wireless Headphones">
+            </div>
+
+            <div style="display:flex; gap:12px;">
+                <div class="field" style="flex:1;"><label>Condition</label><select id="pCondition"><option value="NEW">New</option><option value="LIKE_NEW">Like new</option><option value="GOOD">Good</option><option value="USED" selected>Used</option></select></div>
+                <div class="field" style="flex:1;"><label>Listing status</label><select id="pAvailability"><option value="ACTIVE">Active</option><option value="RESERVED">Reserved</option><option value="SOLD">Sold</option></select></div>
+            </div>
+            <div class="field"><label>Preferred pickup time (optional)</label><input type="text" id="pPickupWindow" maxlength="100" placeholder="e.g. Weekdays, 1–4 PM"></div>
+
+            <div class="field">
+                <label>Category</label>
+                <select id="pCategory" required>
+                    <option value="Electronics">Electronics</option>
+                    <option value="Fashion">Fashion</option>
+                    <option value="Home">Home</option>
+                    <option value="Books">Books</option>
+                    <option value="Sports">Sports</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label>Description</label>
+                <textarea id="pDescription" rows="3" placeholder="Short description of the product"></textarea>
+            </div>
+
+            <div style="display:flex; gap:12px;">
+                <div class="field" style="flex:1;">
+                    <label>Price (৳)</label>
+                    <input type="number" id="pPrice" required min="0" step="0.01">
+                </div>
+                <div class="field" style="flex:1;">
+                    <label>Stock</label>
+                    <input type="number" id="pStock" required min="0">
+                </div>
+            </div>
+
+            <div class="alert alert-error" id="productError"></div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-outline btn-block" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-block">Save Product</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>document.addEventListener('DOMContentLoaded',()=>{const u=getUser();const a=document.getElementById('myShopLink');if(u&&a)a.href='seller-shop.html?id='+u.id;});</script>
+<script src="js/seller.js"></script>
+</body>
+</html>

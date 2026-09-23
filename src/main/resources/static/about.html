@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>About - Tuki-Taki</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="container">
+        <a href="index.html" class="brand"><img class="brand-logo brand-logo-light" src="images/logo-light.png" alt="Tuki-Taki - your campus marketplace"><img class="brand-logo brand-logo-dark" src="images/logo-dark.png" alt="Tuki-Taki - your campus marketplace"></a>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="categories.html">Categories</a>
+            <a href="cart.html">Cart<span class="nav-badge" id="cartBadge" style="display:none;">0</span></a>
+            <a href="seller-dashboard.html">Sell</a>
+            <a href="community.html">Community</a>
+            <a href="wishlist.html">Wishlist</a>
+            <a href="about.html" class="active">About</a>
+        </div>
+        <div class="nav-user" id="guestLinks">
+            <a href="login.html" class="btn btn-outline btn-sm">Log in</a>
+            <a href="register.html" class="btn btn-primary btn-sm">Sign up</a>
+        </div>
+        <div class="nav-user" id="userLinks" style="display:none;">
+            <div class="user-menu">
+                <button type="button" class="user-chip"><span class="avatar" id="navAvatar"></span><span id="navUserName"></span></button>
+                <div class="user-menu-panel">
+                    <a href="profile.html">My Profile</a>
+                    <a href="notifications.html">Notifications</a>
+                    <a href="buyer-dashboard.html">My Orders</a>
+                    <a href="seller-shop.html" data-my-shop-link>My Shop</a>
+                    <a href="messages.html">Messages</a>
+                    <a href="#" onclick="logout()">Log out</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<header class="about-banner">
+    <img class="hero-bg" src="images/about-campus.jpg" alt="">
+    <div class="hero-overlay"></div>
+    <div class="container about-banner-inner">
+        <span class="tag tag-mint">🌉 My story</span>
+        <h1>Tuki-Taki — your campus's own marketplace</h1>
+        <p>Buy, sell, and connect with people on your campus. No shipping fees, no strangers off-campus — just a safer, simpler way to trade with people you already share a campus with.</p>
+    </div>
+</header>
+
+<main class="section container about-page">
+
+    <section class="about-section about-split">
+        <div class="about-split-text">
+            <div class="section-kicker">THE PROBLEM I'M SOLVING</div>
+            <h2>Campus buying and selling shouldn't be this hard</h2>
+            <p class="text-muted">Every semester, students end up with textbooks, gadgets, and furniture they no longer need — while other students on the same campus are searching for exactly those things. Group chats and scattered posts make it slow and unsafe to connect.</p>
+            <p class="text-muted">Tuki-Taki brings everyone onto one platform built specifically for campus life — one place to list, chat, and meet up, instead of a dozen scattered group chats.</p>
+        </div>
+        <div class="about-split-visual">
+            <div class="about-visual-card"><span>📚</span><strong>Textbooks &amp; notes</strong></div>
+            <div class="about-visual-card"><span>💻</span><strong>Gadgets &amp; electronics</strong></div>
+            <div class="about-visual-card"><span>🪑</span><strong>Furniture &amp; dorm gear</strong></div>
+            <div class="about-visual-card"><span>👕</span><strong>Clothes &amp; more</strong></div>
+        </div>
+    </section>
+
+    <section class="about-section about-section-alt">
+        <div class="about-section-inner">
+            <div class="section-kicker">HOW IT WORKS</div>
+            <h2>Three simple steps</h2>
+            <div class="about-steps">
+                <div class="about-step">
+                    <div class="about-step-num">1</div>
+                    <h3>Browse or list</h3>
+                    <p class="text-muted">Search for what you need, or post your own item in a couple of minutes with a photo and a price.</p>
+                </div>
+                <div class="about-step">
+                    <div class="about-step-num">2</div>
+                    <h3>Chat and agree</h3>
+                    <p class="text-muted">Message the buyer or seller directly to confirm details, condition, and pickup time.</p>
+                </div>
+                <div class="about-step">
+                    <div class="about-step-num">3</div>
+                    <h3>Meet and collect</h3>
+                    <p class="text-muted">Collect your order safely at our fixed campus pickup point — no need to share your home address.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="about-section">
+        <div class="section-kicker">WHY IT'S SAFE</div>
+        <h2>Built with trust in mind</h2>
+        <div class="about-trust-grid">
+            <div class="about-trust-card"><span class="about-trust-icon">🎓</span><div><strong>Campus-only accounts</strong><p class="text-muted">Everyone here is a member of the same campus community, not an anonymous stranger from the internet.</p></div></div>
+            <div class="about-trust-card"><span class="about-trust-icon">📍</span><div><strong>Fixed pickup point</strong><p class="text-muted">Every order is collected at one verified, well-lit campus location — never a private address.</p></div></div>
+            <div class="about-trust-card"><span class="about-trust-icon">🚩</span><div><strong>Reporting &amp; moderation</strong><p class="text-muted">Every listing can be reported, and new listings are reviewed before they go live.</p></div></div>
+            <div class="about-trust-card"><span class="about-trust-icon">✅</span><div><strong>Verified sellers</strong><p class="text-muted">Sellers with a blue checkmark have been manually reviewed and verified.</p></div></div>
+        </div>
+    </section>
+
+    <section class="about-section">
+        <div class="section-kicker">WHO BUILT THIS</div>
+        <h2>About the creator</h2>
+        <div class="about-founder-card">
+            <img class="about-founder-avatar" src="images/founder.jpg" alt="Khandakar Rabiul Hasan">
+            <div class="about-founder-body">
+                <h3>Khandakar Rabiul Hasan</h3>
+                <p class="about-founder-role">Software Engineering Student · Daffodil International University (DIU)</p>
+                <p class="text-muted">Tuki-Taki is a solo project — designed, built, and shipped end-to-end (backend, database, and frontend) by me, from the original idea through to a working full-stack application. I built it to solve a real problem I saw on campus, and to sharpen my skills as a software engineer moving toward cloud and security engineering.</p>
+                <div class="about-founder-tags">
+                    <span class="tag">Java · Spring Boot</span>
+                    <span class="tag">MySQL</span>
+                    <span class="tag">HTML/CSS/JS</span>
+                    <span class="tag">System Design</span>
+                </div>
+                <div class="about-founder-links">
+                    <a href="https://github.com/KRH-Rabiul" target="_blank" rel="noopener">🔗 GitHub</a>
+                    <a href="https://linkedin.com/in/khandakar-rabiul-hasan" target="_blank" rel="noopener">🔗 LinkedIn</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="about-section about-contact">
+        <div class="about-contact-card">
+            <div class="section-kicker">GET IN TOUCH</div>
+            <h2>Questions or feedback?</h2>
+            <p class="text-muted">Found a bug, or have an idea to make Tuki-Taki better? I'd love to hear it — reach out through the Community board or connect with me on LinkedIn.</p>
+            <a href="community.html" class="btn btn-primary">Visit the Community board</a>
+        </div>
+    </section>
+
+</main>
+
+<script src="js/app.js"></script>
+</body>
+</html>

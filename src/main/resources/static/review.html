@@ -1,0 +1,172 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Rate & Review - Tuki-Taki</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="css/style.css"><style>.review-page{max-width:650px;margin:0 auto;padding:55px 20px}.review-card{text-align:center}.review-product{display:flex;align-items:center;gap:14px;text-align:left;border:1px solid var(--line);padding:14px;border-radius:12px;background:var(--bg);margin:20px 0}.review-product img{width:80px;height:80px;object-fit:cover;border-radius:10px}.stars-input{display:flex;justify-content:center;gap:5px;margin:18px 0}.star-btn{border:0;background:transparent;font-size:2.2rem;color:#cbd5d1;cursor:pointer;padding:2px;transition:.15s}.star-btn.active,.star-btn:hover{color:#f59e0b;transform:translateY(-2px)}.review-textarea{width:100%;min-height:120px;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--bg);color:var(--ink);font:inherit}.review-actions{display:flex;justify-content:center;gap:10px;margin-top:16px}</style></head><body><nav class="navbar"><div class="container"><a href="index.html" class="brand"><img class="brand-logo brand-logo-light" src="images/logo-light.png" alt="Tuki-Taki - your campus marketplace"><img class="brand-logo brand-logo-dark" src="images/logo-dark.png" alt="Tuki-Taki - your campus marketplace"></a><div class="nav-links"><a href="index.html">Home</a><a href="categories.html">Categories</a><a href="cart.html">Cart</a><a href="seller-dashboard.html">Sell</a><a href="community.html">Community</a><a href="wishlist.html">Wishlist</a><a href="about.html">About</a></div><div class="nav-user"><div class="user-menu"><button type="button" class="user-chip"><span class="avatar" id="navAvatar"></span><span id="navUserName"></span></button><div class="user-menu-panel"><a href="buyer-dashboard.html">My Orders</a><a href="seller-dashboard.html">My Listings</a><a href="#" onclick="logout()">Log out</a></div></div></div></div></nav><main class="review-page"><div class="checkout-card review-card"><span class="tag tag-mint">✓ Order collected</span><h1>How was your experience?</h1><p class="text-muted">Your feedback helps other buyers and rewards trustworthy sellers.</p><div id="productBox" class="review-product">Loading order...</div><h3>Your rating</h3><div class="stars-input" id="stars" aria-label="Choose a rating"></div><textarea id="comment" class="review-textarea" maxlength="1000" placeholder="Share your experience (optional)"></textarea><div id="error" class="alert alert-error"></div><div class="review-actions"><a href="buyer-dashboard.html" class="btn btn-outline">Back to orders</a><button class="btn btn-primary" id="submit" onclick="submitReview()">Submit review</button></div></div></main><script src="js/app.js"></script><script>
+let order = null;
+let rating = 0;
+const id = new URLSearchParams(location.search).get('orderId');
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const u = getUser();
+
+    if (!u) {
+        location.href = 'login.html';
+        return;
+    }
+
+    renderStars();
+    await loadReviewOrder(u.id);
+});
+
+function renderStars() {
+    const stars = document.getElementById('stars');
+    if (!stars) return;
+
+    stars.innerHTML = [1, 2, 3, 4, 5].map(n => `
+        <button
+            class="star-btn"
+            type="button"
+            data-rating="${n}"
+            aria-label="${n} star${n > 1 ? 's' : ''}">
+            ★
+        </button>
+    `).join('');
+
+    stars.querySelectorAll('.star-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            rating = Number(button.dataset.rating);
+
+            stars.querySelectorAll('.star-btn').forEach(star => {
+                star.classList.toggle(
+                    'active',
+                    Number(star.dataset.rating) <= rating
+                );
+            });
+
+            hideReviewError();
+        });
+    });
+}
+
+async function loadReviewOrder(userId) {
+    const productBox = document.getElementById('productBox');
+    const submitButton = document.getElementById('submit');
+
+    const r = await authFetch('/api/orders/buyer/' + userId);
+    const orders = await r.json().catch(() => []);
+
+    if (!r.ok) {
+        if (productBox) {
+            productBox.textContent = 'Could not load this order.';
+        }
+        if (submitButton) submitButton.disabled = true;
+        return;
+    }
+
+    order = orders.find(x => String(x.id) === String(id));
+
+    if (!order || order.status !== 'COLLECTED') {
+        if (productBox) {
+            productBox.textContent =
+                'This order is not available for review yet.';
+        }
+        if (submitButton) submitButton.disabled = true;
+        return;
+    }
+
+    const pr = await fetch('/api/products/' + order.productId);
+    const p = pr.ok ? await pr.json().catch(() => ({})) : {};
+
+    const image = p.imageUrl
+        ? `<img src="${esc(p.imageUrl)}" alt="${esc(p.name || 'Product')}">`
+        : '';
+
+    if (productBox) {
+        productBox.innerHTML = `
+            ${image}
+            <div>
+                <strong>${esc(order.productName || p.name || 'Product')}</strong>
+                <div class="text-muted">
+                    Order #${order.id} · ${esc(order.pickupPoint || 'Bonomaya')}
+                </div>
+            </div>
+        `;
+    }
+}
+
+function hideReviewError() {
+    const e = document.getElementById('error');
+    if (!e) return;
+
+    e.textContent = '';
+    e.classList.remove('show');
+}
+
+function showReviewError(message) {
+    const e = document.getElementById('error');
+    if (!e) return;
+
+    e.textContent = message;
+    e.classList.add('show');
+}
+
+async function submitReview() {
+    if (!order) {
+        showReviewError('Could not load the order.');
+        return;
+    }
+
+    if (!rating) {
+        showReviewError('Please select a rating.');
+        return;
+    }
+
+    const button = document.getElementById('submit');
+    const comment = document.getElementById('comment')?.value.trim() || '';
+
+    if (button) {
+        button.disabled = true;
+        button.textContent = 'Submitting…';
+    }
+
+    try {
+        const r = await authFetch('/api/reviews', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                productId: order.productId,
+                rating: rating,
+                comment: comment
+            })
+        });
+
+        const d = await r.json().catch(() => ({}));
+
+        if (!r.ok) {
+            showReviewError(d.message || 'Could not submit review.');
+            return;
+        }
+
+        location.href = 'buyer-dashboard.html';
+
+    } catch (error) {
+        console.error('Review submission failed:', error);
+        showReviewError('Could not submit review. Please try again.');
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = 'Submit review';
+        }
+    }
+}
+
+function esc(v) {
+    return String(v ?? '').replace(
+        /[&<>'"]/g,
+        c => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            "'": '&#39;',
+            '"': '&quot;'
+        }[c])
+    );
+}
+</script></body></html>

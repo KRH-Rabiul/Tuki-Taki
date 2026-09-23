@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product - Tuki-Taki</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="container">
+        <a href="index.html" class="brand"><img class="brand-logo brand-logo-light" src="images/logo-light.png" alt="Tuki-Taki - your campus marketplace"><img class="brand-logo brand-logo-dark" src="images/logo-dark.png" alt="Tuki-Taki - your campus marketplace"></a>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="categories.html">Categories</a>
+            <a href="cart.html">Cart<span class="nav-badge" id="cartBadge" style="display:none;">0</span></a>
+            <a href="seller-dashboard.html">Sell</a>
+            <a href="community.html">Community</a>
+            <a href="wishlist.html">Wishlist</a>
+            <a href="about.html">About</a>
+        </div>
+        <div class="nav-user" id="guestLinks">
+            <a href="login.html" class="btn btn-outline btn-sm">Log in</a>
+            <a href="register.html" class="btn btn-primary btn-sm">Sign up</a>
+        </div>
+        <div class="nav-user" id="userLinks" style="display:none;">
+            <div class="user-menu">
+                <button type="button" class="user-chip"><span class="avatar" id="navAvatar"></span><span id="navUserName"></span></button>
+                <div class="user-menu-panel">
+                    <a href="buyer-dashboard.html">My Orders</a>
+                    <a href="seller-dashboard.html">My Listings</a>
+                    <a href="#" onclick="logout()">Log out</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<main class="section container">
+    <div class="breadcrumb" id="crumbBox"></div>
+    <div class="pd-layout" id="detailWrap"></div>
+
+    <div style="margin-top:36px; max-width:820px;">
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="desc" onclick="switchTab('desc')">Description</button>
+            <button class="tab-btn" data-tab="specs" onclick="switchTab('specs')">Specifications</button>
+            <button class="tab-btn" data-tab="reviews" onclick="switchTab('reviews')">Reviews</button>
+            <button class="tab-btn" data-tab="pickup" onclick="switchTab('pickup')">Shipping & Pickup</button>
+        </div>
+
+        <div class="tab-panel active" id="tab-desc">
+            <p class="text-muted" id="descText"></p>
+        </div>
+
+        <div class="tab-panel" id="tab-specs">
+            <table class="spec-table" id="specTable"></table>
+        </div>
+
+        <div class="tab-panel" id="tab-reviews">
+            <div id="reviewSummary" class="text-muted" style="margin-bottom:16px;"></div>
+            <div id="reviewForm"></div>
+            <div id="reviewList"></div>
+        </div>
+
+        <div class="tab-panel" id="tab-pickup">
+            <div class="safety-box" style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+                <img src="images/bonomaya-pickup-point.jpg" alt="Bonomaya" style="width:150px; height:110px; object-fit:cover; border-radius:12px; flex-shrink:0;">
+                <div>
+                    <h4>📍 Pickup point: Bonomaya</h4>
+                    <p style="margin:0;">This is a pickup-only marketplace — there is no delivery. Collect your item free from Bonomaya once the seller confirms your order.</p>
+                    <p id="pickupWindowText" style="margin:8px 0 0;"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="js/app.js"></script>
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const productId = params.get('id');
+    let currentProduct = null;
+    let currentSellerVerified = false;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadProduct();
+    });
+
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + tab));
+    }
+
+    async function loadProduct() {
+        const res = await fetch(`/api/products/${productId}`);
+        if (!res.ok) {
+            document.getElementById('detailWrap').innerHTML = '<p>Product not found.</p>';
+            return;
+        }
+        currentProduct = await res.json();
+        render(currentProduct);
+        loadReviews();
+    }
+
+    const CONDITION_LABEL = { NEW: 'New', LIKE_NEW: 'Like New', GOOD: 'Good', USED: 'Used' };
+
+    function render(p) {
+        const user = getUser();
+        const canOrder = user && user.role !== 'ADMIN';
+        const images = (p.imageUrls || p.imageUrl || '').split(',').filter(Boolean);
+        const conditionLabel = CONDITION_LABEL[p.condition] || 'Used';
+        const safeName = escapeHtml(p.name);
+        const safeCategory = escapeHtml(p.category || 'General');
+        const safePickupWindow = escapeHtml(p.pickupWindow || '');
+
+        document.getElementById('crumbBox').innerHTML = `<a href="index.html">Home</a><span class="sep">›</span><a href="categories.html?category=${encodeURIComponent(p.category || '')}">${safeCategory}</a><span class="sep">›</span><span>${safeName}</span>`;
+
+        document.getElementById('detailWrap').innerHTML = `
+            <div>
+                ${images.length
+                    ? `<div class="pd-gallery-main"><img id="mainProductImage" src="${escapeHtml(images[0])}" alt="${safeName}"></div>
+                       <div class="pd-thumbs">${images.map((url, i) => `<div class="pd-thumb ${i === 0 ? 'active' : ''}" onclick="switchMainImage('${escapeHtml(url)}', this)"><img src="${escapeHtml(url)}" alt=""></div>`).join('')}</div>`
+                    : `<div class="pd-gallery-main"><div class="card-img placeholder" style="height:380px;">🛍️</div></div>`}
+            </div>
+            <div>
+                <div class="card-cat">${safeCategory}</div>
+                <h1 class="pd-title">${safeName}</h1>
+                <div class="pd-price-row">
+                    <span class="pd-price">${p.price}</span>
+                </div>
+                <div class="pd-tags">
+                    <span class="tag tag-mint">${conditionLabel}</span>
+                    <span class="tag">${p.stock > 0 ? '✓ In Stock' : 'Out of stock'}</span>
+                </div>
+
+                <div id="sellerProfile" class="seller-box">Loading seller information…</div>
+
+                <div class="safety-box" style="margin-bottom:16px;">
+                    <h4>🛡️ Buy Safely on Tuki-Taki</h4>
+                    <ul>
+                        <li>Meet at our verified campus pickup point</li>
+                        <li>Check the product before payment</li>
+                        <li>Report any suspicious activity</li>
+                    </ul>
+                </div>
+
+                <div class="alert alert-error" id="orderError"></div>
+                <div class="alert alert-success" id="cartToast"></div>
+                <div id="orderSuccess" style="display:none; margin-bottom:16px;"></div>
+
+                ${canOrder ? `
+                    <div class="field" style="max-width:140px;">
+                        <label>Quantity</label>
+                        <input type="number" id="qty" value="1" min="1" max="${p.stock}">
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top:6px;">
+                        <button class="btn btn-outline" onclick="addToCart(${p.id})" ${p.stock === 0 ? 'disabled' : ''}>Add to cart</button>
+                        <button class="btn btn-primary" onclick="placeOrder(${p.id}, ${p.stock})" ${p.stock === 0 ? 'disabled' : ''}>Buy now</button>
+                    </div>
+                ` : !user ? `
+                    <a href="login.html" class="btn btn-primary btn-block">Log in to order</a>
+                ` : `<p class="text-muted">Administrators cannot place marketplace orders.</p>`}
+                ${user && user.role !== 'ADMIN' ? `<button class="text-button" onclick="reportListing(${p.id})">Report this listing</button>` : ''}
+            </div>
+        `;
+
+        document.getElementById('descText').textContent = p.description || 'No description provided.';
+        document.getElementById('specTable').innerHTML = `
+            <tr><td>Category</td><td>${safeCategory}</td></tr>
+            <tr><td>Condition</td><td>${conditionLabel}</td></tr>
+            <tr><td>Stock</td><td>${p.stock > 0 ? p.stock + ' available' : 'Out of stock'}</td></tr>
+            <tr><td>Preferred pickup time</td><td>${safePickupWindow || 'Not specified'}</td></tr>
+        `;
+        document.getElementById('pickupWindowText').textContent = p.pickupWindow ? `Seller's preferred pickup time: ${p.pickupWindow}` : '';
+
+        loadSellerProfile(p.sellerId);
+    }
+
+    function switchMainImage(url, el) {
+        document.getElementById('mainProductImage').src = url;
+        document.querySelectorAll('.pd-thumb').forEach(t => t.classList.remove('active'));
+        el.classList.add('active');
+    }
+
+    async function loadSellerProfile(sellerId) {
+        const box = document.getElementById('sellerProfile');
+        if (!sellerId || String(sellerId) === 'null' || String(sellerId) === 'undefined') {
+            box.innerHTML = '<div class="text-muted">Seller information is not available for this listing.</div>';
+            return;
+        }
+        try {
+            const [profileRes, followRes] = await Promise.all([
+                fetch(`/api/users/${sellerId}/seller-profile`),
+                authFetch(`/api/follows/seller/${sellerId}`)
+            ]);
+            if (!profileRes.ok) throw new Error('Seller profile unavailable');
+            const seller = await profileRes.json();
+            const follow = followRes.ok ? await followRes.json() : { followers: seller.followers || 0, following: false };
+            const user = getUser();
+            const ownProfile = user && String(user.id) === String(seller.id);
+            currentSellerVerified = !!seller.verified;
+            box.innerHTML = `
+                <div class="seller-box-head">
+                    <span class="avatar ${seller.profileImageUrl ? 'has-photo' : ''}">${seller.profileImageUrl ? `<img src="${escapeHtml(seller.profileImageUrl)}" alt="Seller photo">` : escapeHtml((seller.name || '?').charAt(0).toUpperCase())}</span>
+                    <div style="flex:1; min-width:0;">
+                        <div class="name">${escapeHtml(seller.shopName || seller.name)}${verifiedBadgeHTML(seller.verified)}</div>
+                        <div class="loc">${seller.verified ? 'Verified seller' : 'Marketplace member'} · ${follow.followers || 0} follower${follow.followers === 1 ? '' : 's'}</div>
+                    </div>
+                </div>
+                <div class="meta-line"><span>Rating</span><span>${seller.rating ? '★ ' + seller.rating + ' (' + seller.reviewCount + ')' : 'New seller'}</span></div>
+                <div class="meta-line"><span>Active listings</span><span>${seller.activeListings}</span></div>
+                ${seller.bio ? `<p class="text-muted" style="margin:10px 0 0; font-size:.86rem;">${escapeHtml(seller.bio)}</p>` : ''}
+                <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
+                    <a class="btn btn-outline btn-sm" href="seller-shop.html?id=${seller.id}">View shop</a>
+                    ${user && !ownProfile && user.role !== 'ADMIN' ? `<button class="btn btn-primary btn-sm" id="followBtn" onclick="toggleFollow(${seller.id})">${follow.following ? 'Following' : 'Follow seller'}</button><button class="btn btn-outline btn-sm" onclick="messageSeller(${seller.id}, ${productId})">Message</button>` : ''}
+                </div>
+            `;
+        } catch (e) {
+            box.innerHTML = '<div class="text-muted">Could not load seller information. You can still view the listing.</div>';
+            console.error('Seller profile:', e);
+        }
+    }
+
+    async function toggleFollow(sellerId) {
+        const btn = document.getElementById('followBtn');
+        if (!btn) return;
+        const isFollowing = btn.textContent.trim() === 'Following';
+        btn.disabled = true;
+        const res = await authFetch(`/api/follows/seller/${sellerId}`, { method: isFollowing ? 'DELETE' : 'POST' });
+        if (res.ok) {
+            const data = await res.json();
+            btn.textContent = data.following ? 'Following' : 'Follow seller';
+            const loc = document.querySelector('#sellerProfile .loc');
+            if (loc) loc.textContent = `${currentSellerVerified ? 'Verified seller' : 'Marketplace member'} · ${data.followers || 0} follower${data.followers === 1 ? '' : 's'}`;
+        } else {
+            const data = await res.json().catch(() => ({}));
+            alert(data.message || 'Could not update follow status.');
+        }
+        btn.disabled = false;
+    }
+
+    function messageSeller(sellerId, productId) {
+        if (!getUser()) {
+            window.location.href = 'login.html';
+            return;
+        }
+        window.location.href = `messages.html?sellerId=${encodeURIComponent(sellerId)}&productId=${encodeURIComponent(productId)}`;
+    }
+
+    async function reportListing(productId) {
+        const reason = prompt('Why are you reporting this listing?');
+        if (!reason) return;
+        const res = await authFetch('/api/reports', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({productId, reason}) });
+        alert(res.ok ? 'Thanks. Your report was sent to the admin.' : 'Your report could not be sent.');
+    }
+
+    function addToCart(productId) {
+        const qty = parseInt(document.getElementById('qty').value || '1');
+        const cart = getCart();
+        const existing = cart.find(item => item.productId === productId);
+        if (existing) {
+            existing.quantity += qty;
+        } else {
+            cart.push({
+                productId: currentProduct.id,
+                name: currentProduct.name,
+                price: currentProduct.price,
+                image: currentProduct.imageUrl,
+                stock: currentProduct.stock,
+                quantity: qty
+            });
+        }
+        saveCart(cart);
+
+        const toast = document.getElementById('cartToast');
+        toast.textContent = 'Added to cart!';
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    async function placeOrder(productId, stock) {
+        const qty = parseInt(document.getElementById('qty').value || '1');
+        const errBox = document.getElementById('orderError');
+        errBox.classList.remove('show');
+        if (qty < 1 || qty > stock) {
+            errBox.textContent = 'Please choose a valid quantity.';
+            errBox.classList.add('show');
+            return;
+        }
+        window.location.href = `checkout.html?productId=${productId}&quantity=${qty}`;
+    }
+
+    // ---- Reviews ----
+
+    async function loadReviews() {
+        const res = await fetch(`/api/reviews/product/${productId}`);
+        const data = await res.json();
+
+        document.getElementById('reviewSummary').innerHTML = data.count > 0
+            ? `⭐ ${data.average} average (${data.count} review${data.count > 1 ? 's' : ''})`
+            : 'No reviews yet.';
+
+        const list = document.getElementById('reviewList');
+        list.innerHTML = data.reviews.map(r => `
+            <div class="review-item">
+                <strong>${escapeHtml(r.buyerName)}</strong> <span class="stars">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
+                <p>${escapeHtml(r.comment || '')}</p>
+            </div>
+        `).join('') || '<p class="text-muted">Be the first to review this product.</p>';
+
+        checkCanReview(data.reviews);
+    }
+
+    // A buyer can review only after confirming collection and only once per product.
+    async function checkCanReview(existingReviews) {
+        const user = getUser();
+        const formBox = document.getElementById('reviewForm');
+        formBox.innerHTML = '';
+        if (!user || user.role === 'ADMIN') return;
+
+        const alreadyReviewed = existingReviews.some(r => r.buyerId === user.id);
+        if (alreadyReviewed) return;
+
+        const ordersRes = await authFetch(`/api/orders/buyer/${user.id}`);
+        if (!ordersRes.ok) return;
+        const orders = await ordersRes.json();
+        const eligible = orders.some(o => String(o.productId) === String(productId) && o.status === 'COLLECTED');
+        if (!eligible) return;
+
+        formBox.innerHTML = `
+            <div style="border:1px solid var(--line); border-radius:var(--radius-sm); padding:16px; margin-bottom:16px; background:var(--bg-raised);">
+                <label style="font-size:.86rem; font-weight:600;">Your rating</label>
+                <select id="reviewRating" style="width:100%; padding:9px; margin-top:6px; border:1px solid var(--line); border-radius:8px; background:var(--bg);">
+                    <option value="5">5 - Excellent</option>
+                    <option value="4">4 - Good</option>
+                    <option value="3">3 - Okay</option>
+                    <option value="2">2 - Poor</option>
+                    <option value="1">1 - Bad</option>
+                </select>
+                <textarea id="reviewComment" rows="2" placeholder="Share your experience (optional)" style="width:100%; margin-top:8px; padding:8px; border:1px solid var(--line); border-radius:8px; background:var(--bg);"></textarea>
+                <button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="submitReview()">Submit review</button>
+            </div>
+        `;
+    }
+
+    async function submitReview() {
+        const rating = parseInt(document.getElementById('reviewRating').value);
+        const comment = document.getElementById('reviewComment').value.trim();
+        await authFetch('/api/reviews', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId, rating, comment })
+        });
+        loadReviews();
+    }
+</script>
+</body>
+</html>

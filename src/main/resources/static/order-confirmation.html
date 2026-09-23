@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Confirmed - Tuki-Taki</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+<nav class="navbar">
+    <div class="container">
+        <a href="index.html" class="brand"><img class="brand-logo brand-logo-light" src="images/logo-light.png" alt="Tuki-Taki - your campus marketplace"><img class="brand-logo brand-logo-dark" src="images/logo-dark.png" alt="Tuki-Taki - your campus marketplace"></a>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="categories.html">Categories</a>
+            <a href="cart.html">Cart<span class="nav-badge" id="cartBadge" style="display:none;">0</span></a>
+            <a href="seller-dashboard.html">Sell</a>
+            <a href="community.html">Community</a>
+            <a href="wishlist.html">Wishlist</a>
+            <a href="about.html">About</a>
+        </div>
+        <div class="nav-user">
+            <div class="user-menu">
+                <button type="button" class="user-chip"><span class="avatar" id="navAvatar"></span><span id="navUserName"></span></button>
+                <div class="user-menu-panel">
+                    <a href="buyer-dashboard.html">My Orders</a>
+                    <a href="seller-dashboard.html">My Listings</a>
+                    <a href="notifications.html">Notifications</a>
+                    <a href="#" onclick="logout()">Log out</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<main class="confirmation-page">
+    <section class="confirmation-card">
+        <div class="confirmation-status">✓ Order placed</div>
+        <h1>Your order is confirmed!</h1>
+        <p class="confirmation-subtitle">
+            Your order has been successfully placed. Collect your item from Bonomaya once the seller confirms it is ready.
+        </p>
+
+        <div id="orderItemsBox"></div>
+
+        <div class="confirmation-image-wrap">
+            <img src="images/bonomaya-pickup-point.jpg" alt="Bonomaya pickup point">
+        </div>
+
+        <div class="confirmation-pickup">
+            <div class="confirmation-pickup-title"><span>📍</span><span>Pickup Point</span></div>
+            <div class="confirmation-pickup-name">Bonomaya</div>
+            <div class="confirmation-pickup-note">Your item will be available here after the seller confirms the order.</div>
+        </div>
+
+        <div class="confirmation-actions">
+            <a href="buyer-dashboard.html" class="btn btn-primary">View My Orders</a>
+            <a href="index.html" class="btn btn-outline">Continue Shopping</a>
+        </div>
+    </section>
+</main>
+
+<script src="js/app.js"></script>
+<script>
+    requireMarketplaceUser();
+
+    // The order(s) we just placed were stashed here by checkout.html right
+    // before redirecting - render them, then clear it so a page refresh (or
+    // someone else using this browser later) doesn't show stale order data.
+    const raw = localStorage.getItem('mb_last_order');
+    const orders = raw ? JSON.parse(raw) : [];
+    localStorage.removeItem('mb_last_order');
+
+    const box = document.getElementById('orderItemsBox');
+    if (Array.isArray(orders) && orders.length) {
+        const total = orders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+        box.innerHTML = `
+            <div class="table-wrap" style="text-align:left; margin:20px 0;">
+                <table>
+                    <thead><tr><th>Item</th><th>Qty</th><th>Total</th><th>Pickup code</th></tr></thead>
+                    <tbody>
+                        ${orders.map(o => `
+                            <tr>
+                                <td>${o.productName}</td>
+                                <td>${o.quantity}</td>
+                                <td>${o.totalPrice}</td>
+                                <td><strong>${o.pickupCode}</strong></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-muted" style="text-align:left;">Grand total: <strong>${total}</strong> · Show the pickup code above when you collect your item(s).</p>
+        `;
+    } else {
+        box.innerHTML = `<p class="text-muted">Head to "My Orders" any time to see your pickup code and order status.</p>`;
+    }
+</script>
+</body>
+</html>

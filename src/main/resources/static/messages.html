@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Messages - Tuki-Taki</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="css/style.css"></head>
+<body>
+<nav class="navbar"><div class="container"><a href="index.html" class="brand"><img class="brand-logo brand-logo-light" src="images/logo-light.png" alt="Tuki-Taki - your campus marketplace"><img class="brand-logo brand-logo-dark" src="images/logo-dark.png" alt="Tuki-Taki - your campus marketplace"></a><div class="nav-links"><a href="index.html">Home</a><a href="categories.html">Categories</a><a href="cart.html">Cart<span class="nav-badge" id="cartBadge" style="display:none">0</span></a><a href="seller-dashboard.html">Sell</a><a href="community.html">Community</a><a href="wishlist.html">Wishlist</a><a href="about.html">About</a></div><div class="nav-user"><div class="user-menu"><button type="button" class="user-chip"><span class="avatar" id="navAvatar"></span><span id="navUserName"></span></button><div class="user-menu-panel"><a href="profile.html">My Profile</a><a href="notifications.html">Notifications</a><a href="buyer-dashboard.html">My Orders</a><a href="seller-shop.html" data-my-shop-link>My Shop</a><a href="messages.html" class="active">Messages</a><a href="#" onclick="logout()">Log out</a></div></div></div></div></nav>
+<div class="dash">
+    <aside class="sidebar">
+        <h3>Account</h3>
+        <a class="side-link" href="profile.html">Profile</a>
+        <a class="side-link" href="notifications.html">Notifications</a>
+        <a class="side-link" href="buyer-dashboard.html">My Orders</a>
+        <a class="side-link" href="wishlist.html">Wishlist</a>
+        <a class="side-link" href="seller-shop.html" data-my-shop-link>My Shop</a>
+        <a class="side-link" href="seller-dashboard.html">My Listings</a>
+        <a class="side-link" href="seller-dashboard.html#orders">Orders Received</a>
+        <a class="side-link active" href="messages.html">Messages</a>
+    </aside>
+    <section class="dash-content">
+<main class="section container">
+<div class="messages-page-head"><div><div class="section-kicker">INBOX</div><h1>Messages</h1><p class="text-muted">Chat with buyers and sellers about listings, pickup and availability.</p></div><a href="categories.html" class="btn btn-outline btn-sm">Browse listings</a></div>
+<div class="messages-layout">
+<aside class="card messages-list"><div class="card-body"><div class="messages-search"><input id="conversationSearch" placeholder="Search conversations..."></div><div id="conversationList" class="text-muted">Loading conversations...</div></div></aside>
+<section class="card messages-chat"><div class="card-body"><div id="chatHeader" class="messages-header"><div><strong>Select a conversation</strong><small>Choose a chat from the left</small></div></div><div id="productContext" class="message-product-context" style="display:none"></div><div id="messageList" class="message-list"><div class="messages-empty"><div>💬</div><strong>Your conversations appear here</strong><p>Select a conversation or start one from a product page.</p></div></div><form id="messageForm" class="message-composer" style="display:none"><input id="messageInput" maxlength="2000" placeholder="Write a message..."><button class="btn btn-primary" type="submit">Send</button></form></div></section>
+</div></main>
+    </section>
+</div>
+<script src="js/app.js"></script><script>
+let selected = null;
+let rows = [];
+const params = new URLSearchParams(location.search);
+let wanted = params.get('conversation');
+const sellerId = params.get('sellerId');
+const productId = params.get('productId');
+
+document.addEventListener('DOMContentLoaded', async () => {
+    if (!getUser()) {
+        location.href = 'login.html';
+        return;
+    }
+
+    const search = document.getElementById('conversationSearch');
+    if (search) search.addEventListener('input', renderConversations);
+
+    const form = document.getElementById('messageForm');
+    if (form) form.addEventListener('submit', sendMessage);
+
+    await loadConversations();
+
+    if (sellerId && productId) {
+        await startFromProduct();
+    }
+});
+
+async function loadConversations() {
+    const r = await authFetch('/api/messages/conversations');
+    const list = document.getElementById('conversationList');
+
+    if (!r.ok) {
+        if (list) list.innerHTML = '<p class="text-muted">Could not load messages.</p>';
+        return;
+    }
+
+    rows = await r.json().catch(() => []);
+    renderConversations();
+
+    if (wanted && rows.some(c => String(c.id) === String(wanted))) {
+        const toOpen = wanted;
+        wanted = null; // only auto-open the requested conversation once - after
+                        // this, clicking a different row must not snap back to it
+        await openConversation(toOpen);
+    }
+}
+
+function renderConversations() {
+    const search = document.getElementById('conversationSearch');
+    const list = document.getElementById('conversationList');
+    if (!list) return;
+
+    const q = (search?.value || '').trim().toLowerCase();
+
+    const filtered = rows.filter(c =>
+        `${c.otherName || ''} ${c.productName || ''} ${c.lastMessage || ''}`
+            .toLowerCase()
+            .includes(q)
+    );
+
+    list.innerHTML = filtered.length
+        ? filtered.map(c => `
+            <button
+                type="button"
+                class="conversation-row ${String(c.id) === String(selected) ? 'active' : ''}"
+                onclick="openConversation(${c.id})">
+
+                <span class="conversation-avatar ${c.otherProfileImageUrl ? 'has-photo' : ''}">
+                    ${c.otherProfileImageUrl ? `<img src="${escapeHtml(c.otherProfileImageUrl)}" alt="">` : escapeHtml((c.otherName || '?')[0].toUpperCase())}
+                </span>
+
+                <span class="conversation-main">
+                    <strong>${escapeHtml(c.otherName || 'Unknown')}${verifiedBadgeHTML(c.otherVerified)}</strong>
+                    <small>${escapeHtml(c.productName || 'Product')}</small>
+                    <span>${escapeHtml(c.lastMessage || 'Start the conversation')}</span>
+                </span>
+
+                ${c.unread ? `<b class="message-unread">${c.unread}</b>` : ''}
+            </button>
+        `).join('')
+        : `
+            <div class="messages-empty compact">
+                <div>📭</div>
+                <p>No conversations found.</p>
+            </div>
+        `;
+}
+
+async function startFromProduct() {
+    const r = await authFetch('/api/messages/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            sellerId: Number(sellerId),
+            productId: Number(productId)
+        })
+    });
+
+    if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        alert(d.message || 'Could not start conversation.');
+        return;
+    }
+
+    const c = await r.json();
+
+    // We're about to open this conversation directly below, so it doesn't
+    // need to be re-opened again by the next loadConversations() call.
+    wanted = null;
+
+    if (!rows.some(x => String(x.id) === String(c.id))) {
+        await loadConversations();
+    }
+
+    await openConversation(c.id);
+
+    document.getElementById('messageInput')?.focus();
+}
+
+async function openConversation(id) {
+    selected = id;
+    renderConversations();
+
+    const r = await authFetch(`/api/messages/${id}`);
+    if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        alert(d.message || 'Could not load conversation.');
+        return;
+    }
+
+    const d = await r.json();
+    const u = getUser();
+    const c = d.conversation;
+    const row = rows.find(x => String(x.id) === String(id));
+
+    const chatHeader = document.getElementById('chatHeader');
+    const productContext = document.getElementById('productContext');
+    const messageList = document.getElementById('messageList');
+    const messageForm = document.getElementById('messageForm');
+
+    if (chatHeader) {
+        const hasProduct = c.productId && Number(c.productId) > 0;
+        const photo = row?.otherProfileImageUrl;
+        chatHeader.innerHTML = `
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span class="conversation-avatar ${photo ? 'has-photo' : ''}" style="width:38px; height:38px;">
+                    ${photo ? `<img src="${escapeHtml(photo)}" alt="">` : escapeHtml((row?.otherName || '?')[0].toUpperCase())}
+                </span>
+                <div>
+                    <strong>${escapeHtml(row?.otherName || 'Conversation')}${verifiedBadgeHTML(row?.otherVerified)}</strong>
+                    <small>${hasProduct ? 'About ' + escapeHtml(row?.productName || 'listing') : 'Community conversation'}</small>
+                </div>
+            </div>
+            ${hasProduct ? `<a class="btn btn-outline btn-sm" href="product-details.html?id=${c.productId}">View listing</a>` : ''}
+        `;
+    }
+
+    if (productContext) {
+        const hasProduct = c.productId && Number(c.productId) > 0;
+        productContext.style.display = 'flex';
+        productContext.innerHTML = hasProduct ? `
+            <span>🛍️</span>
+            <div>
+                <strong>${escapeHtml(row?.productName || 'Product')}</strong>
+                <small>Marketplace conversation</small>
+            </div>
+        ` : `
+            <span>💬</span>
+            <div>
+                <strong>Community conversation</strong>
+                <small>Started from a Community post</small>
+            </div>
+        `;
+    }
+
+    if (messageList) {
+        messageList.innerHTML = (d.messages || []).map(m => `
+            <div class="message-bubble ${String(m.senderId) === String(u.id) ? 'mine' : ''}">
+                <div>${escapeHtml(m.content)}</div>
+                <small>${new Date(m.createdAt).toLocaleString()}</small>
+            </div>
+        `).join('') || `
+            <div class="messages-empty">
+                <div>💬</div>
+                <strong>Start the conversation</strong>
+                <p>Ask about availability, condition, price or pickup.</p>
+            </div>
+        `;
+
+        messageList.scrollTop = messageList.scrollHeight;
+    }
+
+    if (messageForm) messageForm.style.display = 'flex';
+
+    await loadConversations();
+}
+
+async function sendMessage(e) {
+    e.preventDefault();
+
+    if (!selected) {
+        alert('Please select a conversation first.');
+        return;
+    }
+
+    const input = document.getElementById('messageInput');
+    const button = e.submitter || document.querySelector('#messageForm button[type="submit"]');
+    const content = input?.value.trim() || '';
+
+    if (!content) return;
+
+    if (button) {
+        button.disabled = true;
+        button.textContent = 'Sending…';
+    }
+
+    try {
+        const r = await authFetch(`/api/messages/${selected}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content })
+        });
+
+        const d = await r.json().catch(() => ({}));
+
+        if (!r.ok) {
+            alert(d.message || 'Message could not be sent.');
+            return;
+        }
+
+        if (input) input.value = '';
+
+        await openConversation(selected);
+
+    } catch (error) {
+        console.error('Message send failed:', error);
+        alert('Message could not be sent. Please try again.');
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = 'Send';
+        }
+    }
+}
+
+// escapeHtml() lives in js/app.js and is shared across pages.
+</script></body></html>
